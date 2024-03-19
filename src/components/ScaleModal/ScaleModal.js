@@ -78,8 +78,6 @@ const ScaleModal = ({ annotations, selectedTool }) => {
     const precisionItems = precisionOptions[getPrecisionType(isFractionalPrecision)];
     setPrecisionOption(precisionItems[precisionItems.length - 1]);
 
-
-
     setPresetScale(measurementScalePreset[presetMeasurementSystem][0]);
   }, [isFractionalPrecision]);
 
@@ -106,15 +104,17 @@ const ScaleModal = ({ annotations, selectedTool }) => {
   useDidUpdate(() => {
     if (scaleOption === scaleOptions.CUSTOM) {
       setCustomScale(presetScale[1]);
+
+
     } else {
+
       const presetPrecisionOption = scalePresetPrecision[presetScale[0]];
       if (presetPrecisionOption && presetPrecisionOption !== precisionOption) {
         if (isFractionalPrecision) {
-          setPrecisionOption(precisionOptions[PrecisionType.FRACTIONAL][0]);
+          setPrecisionOption(precisionOptions[PrecisionType.FRACTIONAL][precisionOptions[PrecisionType.FRACTIONAL].length - 1]);
         } else {
-          setPrecisionOption(precisionOptions[PrecisionType.DECIMAL][0]);
+          setPrecisionOption(precisionOptions[PrecisionType.DECIMAL][precisionOptions[PrecisionType.DECIMAL].length - 1]);
         }
-
       }
     }
   }, [scaleOption]);
