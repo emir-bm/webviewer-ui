@@ -268,7 +268,6 @@ const ScaleModal = ({ annotations, selectedTool }) => {
               </div>
             </div>
             <div className="content-container">
-              <button onClick={toggleFractionalPrecision}>TGL</button>
               <div className="scaleSetting">
                 <div className="custom-option-wrapper">
                   <div className="custom-scale-option">
