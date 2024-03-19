@@ -11,7 +11,7 @@ import {
   PresetMeasurementSystems,
   fractionalUnits,
   ifFractionalPrecision,
-  initialScale
+  initialScale,
 } from 'constants/measurementScale';
 import core from 'core';
 import actions from 'actions';
@@ -30,7 +30,7 @@ const Scale = window.Core.Scale;
 
 export const scaleOptions = {
   CUSTOM: 'custom',
-  PRESET: 'preset'
+  PRESET: 'preset',
 };
 
 const ScaleModal = ({ annotations, selectedTool }) => {
@@ -47,7 +47,7 @@ const ScaleModal = ({ annotations, selectedTool }) => {
     isAddingNewScale,
     measurementScalePreset,
     { tempScale, isFractionalUnit },
-    isMultipleScalesMode
+    isMultipleScalesMode,
   ] = useSelector((state) => [
     selectors.isElementDisabled(state, DataElements.SCALE_MODAL),
     selectors.isElementOpen(state, DataElements.SCALE_MODAL),
@@ -58,7 +58,7 @@ const ScaleModal = ({ annotations, selectedTool }) => {
     selectors.getIsAddingNewScale(state),
     selectors.getMeasurementScalePreset(state),
     selectors.getCalibrationInfo(state),
-    selectors.getIsMultipleScalesMode(state)
+    selectors.getIsMultipleScalesMode(state),
   ]);
 
   const [isFractionalPrecision, setIsFractionalPrecision] = useState(false);
@@ -74,6 +74,10 @@ const ScaleModal = ({ annotations, selectedTool }) => {
     if (!precisionOptions[precisionType].includes(precisionOption)) {
       setPrecisionOption(precisionOptions[precisionType][0]);
     }
+
+    const precisionItems = precisionOptions[getPrecisionType(isFractionalPrecision)];
+    setPrecisionOption(precisionItems[precisionItems.length - 1]);
+
     setPresetScale(measurementScalePreset[presetMeasurementSystem][0]);
   }, [isFractionalPrecision]);
 
@@ -89,8 +93,7 @@ const ScaleModal = ({ annotations, selectedTool }) => {
     setIsFractionalPrecision(isFractional);
 
     const precisionItems = precisionOptions[getPrecisionType(isFractional)];
-    const precisionItem = precisionItems.find((item) => item[1] === precision);
-    setPrecisionOption(precisionItem);
+    setPrecisionOption(precisionItems[precisionItems.length - 1]);
 
     // Update/Create button should be disabled until the user makes a change
     setTimeout(() => {
@@ -101,10 +104,17 @@ const ScaleModal = ({ annotations, selectedTool }) => {
   useDidUpdate(() => {
     if (scaleOption === scaleOptions.CUSTOM) {
       setCustomScale(presetScale[1]);
+
+
     } else {
+
       const presetPrecisionOption = scalePresetPrecision[presetScale[0]];
       if (presetPrecisionOption && presetPrecisionOption !== precisionOption) {
-        setPrecisionOption(presetPrecisionOption);
+        if (isFractionalPrecision) {
+          setPrecisionOption(precisionOptions[PrecisionType.FRACTIONAL][precisionOptions[PrecisionType.FRACTIONAL].length - 1]);
+        } else {
+          setPrecisionOption(precisionOptions[PrecisionType.DECIMAL][precisionOptions[PrecisionType.DECIMAL].length - 1]);
+        }
       }
     }
   }, [scaleOption]);
@@ -117,8 +127,17 @@ const ScaleModal = ({ annotations, selectedTool }) => {
 
   useEffect(() => {
     const newPrecisionOption = scalePresetPrecision[presetScale[0]];
+
     if (newPrecisionOption && scaleOption === scaleOptions.PRESET) {
-      setPrecisionOption(newPrecisionOption);
+      if (isFractionalPrecision) {
+        const fractionalPrecisions = precisionOptions[PrecisionType.FRACTIONAL];
+        setPrecisionOption(fractionalPrecisions[fractionalPrecisions.length - 1]);
+      } else {
+        const decimalPrecisons = precisionOptions[PrecisionType.DECIMAL];
+        setPrecisionOption(decimalPrecisons[decimalPrecisons.length - 1]);
+      }
+
+
     }
   }, [presetScale]);
 
@@ -138,12 +157,17 @@ const ScaleModal = ({ annotations, selectedTool }) => {
   useEffect(() => {
     // Reset component state when adding new scale
     if (isOpen && isAddingNewScale && !tempScale) {
-      setScaleOption(scaleOptions.CUSTOM);
+      setScaleOption(scaleOptions.PRESET);
       setCustomScale(initialScale);
-      setIsFractionalPrecision(false);
-      setPrecisionOption(precisionOptions[PrecisionType.DECIMAL][0]);
+      setIsFractionalPrecision(true);
+      setPrecisionOption(precisionOptions[PrecisionType.FRACTIONAL][precisionOptions[PrecisionType.FRACTIONAL].length - 1]);
     }
   }, [isOpen, isAddingNewScale]);
+
+  useEffect(() => {
+    setScaleOption(scaleOptions.PRESET);
+    setIsFractionalPrecision(true);
+  }, []);
 
   const closeModal = () => {
     dispatch(actions.closeElement(DataElements.SCALE_MODAL));
@@ -166,7 +190,11 @@ const ScaleModal = ({ annotations, selectedTool }) => {
   const openCalibrationTool = () => {
     core.setToolMode('AnnotationCreateCalibrationMeasurement');
     const unit = isCustomOption ? (customScale.worldScale?.unit || '') : presetScale[1].worldScale.unit;
-    dispatch(actions.updateCalibrationInfo({ isCalibration: true, previousToolName: activeToolName, defaultUnit: unit }));
+    dispatch(actions.updateCalibrationInfo({
+      isCalibration: true,
+      previousToolName: activeToolName,
+      defaultUnit: unit,
+    }));
     dispatch(actions.setIsElementHidden(DataElements.SCALE_MODAL, true));
   };
 
@@ -201,20 +229,20 @@ const ScaleModal = ({ annotations, selectedTool }) => {
   const onUpdate = () => {
     replaceScales(
       [selectedScale],
-      new Scale(getCurrentScale(), precisionOption[1])
+      new Scale(getCurrentScale(), precisionOption[1]),
     );
   };
 
   const onCreate = () => {
     createAndApplyScale(
       new Scale(getCurrentScale(), precisionOption[1]),
-      [...annotations, selectedTool]
+      [...annotations, selectedTool],
     );
   };
 
   const modalClass = classNames('Modal', 'ScaleModal', {
     open: !isHidden,
-    closed: isHidden
+    closed: isHidden,
   });
   const isCustomOption = scaleOption === scaleOptions.CUSTOM;
   const presetMeasurementSystem = isFractionalPrecision ? PresetMeasurementSystems.IMPERIAL : PresetMeasurementSystems.METRIC;
